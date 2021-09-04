@@ -1,3 +1,0 @@
-<launch>
-  <node name="main" pkg="package_test" type="main_node.py" />
-</launch>
