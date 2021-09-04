@@ -1,4 +1,5 @@
 #!/bin/sh
+cd ~
 if [ $# -eq 1 ]
 then
 	if [ $1 = "ue" ]
