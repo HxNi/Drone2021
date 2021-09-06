@@ -145,8 +145,9 @@ class DroneControl:
   def process(self):
     r = rospy.Rate(3)
     while not rospy.is_shutdown() and self.initialized:
-      if not self.d.state.armed:
+      if not self.d.isArmed():
         self.initialized = False
+        continue
 
       # Input
       lp = self.d.getLocalPosition()
