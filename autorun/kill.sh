@@ -7,8 +7,8 @@ then
 	echo "OPTION: ue\r"
 	fi
 else
-	killall depth_noise.sh
-	killall mavros.sh
-	killall px4.sh
-	killall airsim.sh
+	killall -9 depth_noise.sh
+	killall -9 mavros.sh
+	killall -9 px4.sh
+	killall -9 airsim.sh
 fi
