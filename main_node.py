@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 import rospy
+from math import sqrt
 from drone import DroneFlight
 
 class DroneControl:
   def __init__(self):
     self.d = DroneFlight()
     self.initialized = False
+    self.completed = False
+    self.wp = [[0, 0, 2.1], [6.5, 0, 2.1]]
+    self.current_wp = 0
 
   def init(self):
     r = rospy.Rate(4)
@@ -58,12 +62,27 @@ class DroneControl:
       rospy.loginfo(s)
 
       # Process
+      self.update_wp_reach()
+      if self.completed:
+        break
 
       # Output
-      self.d.setLocalPosition(6.5, 0, 2.1)
-      self.d.setVelocity(4)
+      self.d.setLocalPosition(self.wp[self.current_wp][0], self.wp[self.current_wp][1], self.wp[self.current_wp][2])
+      #self.d.setVelocity(1)
 
       r.sleep()
+  
+  def update_wp_reach(self):
+    lp = self.d.getLocalPosition()
+    
+    dist = sqrt((self.wp[self.current_wp][0] - lp.x)**2 + (self.wp[self.current_wp][1] - lp.y)**2 + (self.wp[self.current_wp][2] - lp.z)**2)
+
+    if dist < 0.2:
+      rospy.loginfo("WayPoint Reached")
+      self.current_wp += 1
+      if len(self.wp) == self.current_wp:
+        rospy.loginfo("Mission Complete")
+        self.completed = True
 
 if __name__ == '__main__':
   rospy.init_node('main', anonymous=True)
