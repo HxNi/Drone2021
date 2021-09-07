@@ -8,12 +8,12 @@ class DroneControl:
     self.d = DroneFlight()
     self.initialized = False
     self.completed = False
-    self.wp =  [[0, 0, 2.1],
-               [5.5, 0, 2.1], [6.5, 0, 2.1],
-               [11.5, 2.5, 2.1], [12.5, 2.5, 2.1],
-               [17.5, 0, 2.1], [18.5, 0, 2.1],
-               [23.5, 2.5, 2.1], [24.5, 2.5, 2.1],
-               [29, 2.5, 2.1], [29, -7.5, 2.1], [29, -8.5, 2.1],]
+    self.wp =  [[0, 0, 2.1, 0],
+               [5.5, 0, 2.1, 0], [6.5, 0, 2.1, 0],
+               [11.5, 2.5, 2.1, 0], [12.5, 2.5, 2.1, 0],
+               [17.5, 0, 2.1, 0], [18.5, 0, 2.1, 0],
+               [23.5, 2.5, 2.1, 0], [24.5, 2.5, 2.1, 0],
+               [29, 2.5, 2.1, 0], [29, -7.5, 2.1, 0], [29, -8.5, 2.1, 0],]
     self.current_wp = 0
 
   def init(self):
@@ -72,7 +72,7 @@ class DroneControl:
         break
 
       # Output
-      self.d.setLocalPosition(self.wp[self.current_wp][0], self.wp[self.current_wp][1], self.wp[self.current_wp][2], 0)
+      self.d.setLocalPosition(self.wp[self.current_wp][0], self.wp[self.current_wp][1], self.wp[self.current_wp][2], self.wp[self.current_wp][3])
       #self.d.setVelocity(1)
 
       r.sleep()
