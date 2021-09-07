@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Twist
 from mavros_msgs.msg import State, HomePosition
 from sensor_msgs.msg import Image
 from mavros_msgs.srv import CommandBool, SetMode
@@ -11,16 +11,18 @@ class Drone(object):
 
     # Publisher Variables
     self.local_position_pv = PoseStamped()
+    self.velocity_pv = Twist()
 
     # Subscriber Variables
-    self.state = State()
-    self.home_position = HomePosition()
+    self.state_sv = State()
+    self.home_position_sv = HomePosition()
     self.local_position_sv = PoseStamped()
-    self.scene = Image()
-    self.depth_image = Image()
+    self.scene_sv = Image()
+    self.depth_image_sv = Image()
 
     # Publisher Init
     self.LocalPositionPb = rospy.Publisher('/mavros/setpoint_position/local', PoseStamped, queue_size=10)
+    self.VelocityPb = rospy.Publisher('/mavros/setpoint_velocity/cmd_vel_unstamped', Twist, queue_size=10)
 
     # Subscriber Init
     rospy.Subscriber('/mavros/state', State, self.stateCb)
@@ -36,32 +38,35 @@ class Drone(object):
     self.arming = rospy.ServiceProxy('/mavros/cmd/arming', CommandBool)
 
   # Publisher Publish
-  def pubLocalPosition_(self):
+  def pubLocalPosition(self):
     self.LocalPositionPb.publish(self.local_position_pv)
+  
+  def pubVelocity(self):
+    self.VelocityPb.publish(self.velocity_pv)
 
   # Subscriber Subscribe(Callback)
   def stateCb(self, msg):
-    self.state = msg
+    self.state_sv = msg
   
   def homeCb(self, msg):
     self.home_set = True
-    self.home_position = msg
+    self.home_position_sv = msg
   
   def localPositionCb(self, msg):
     self.local_position_sv = msg
 
   def sceneCb(self, msg):
-    self.scene = msg
+    self.scene_sv = msg
   
   def depthImageCb(self, msg):
-    self.depth_image = msg
+    self.depth_image_sv = msg
 
 class DroneFlight(Drone):
   def __init__(self):
     super(DroneFlight, self).__init__()
 
   # Publisher Data Generation
-  def setLocalPosition(self, x, y, z):
+  def setLocalPosition_(self, x, y, z):
     lp = PoseStamped()
     
     lp.header.stamp = rospy.Time.now()
@@ -70,21 +75,34 @@ class DroneFlight(Drone):
     lp.pose.position.z = z
 
     self.local_position_pv = lp
+  
+  def setVelocity_(self, vel):
+    v = Twist()
+
+    v.linear.x = vel
+    v.linear.y = vel
+    v.linear.z = 0
+
+    self.velocity_pv = v
 
   # Publisher Publish with Data
-  def pubLocalPosition(self, x, y, z):
-    self.setLocalPosition(x, y, z)
-    self.pubLocalPosition_()
+  def setLocalPosition(self, x, y, z):
+    self.setLocalPosition_(x, y, z)
+    self.pubLocalPosition()
+  
+  def setVelocity(self, vel):
+    self.setVelocity_(vel)
+    self.pubVelocity()
 
   # Subscriber Data Consumption
   def isFCUConnected(self):
-    return self.state.connected
+    return self.state_sv.connected
   
   def getMode(self):
-    return self.state.mode
+    return self.state_sv.mode
 
   def isArmed(self):
-    return self.state.armed
+    return self.state_sv.armed
   
   def isHomeSet(self):
     return self.home_set
@@ -120,14 +138,14 @@ class DroneControl:
     rospy.loginfo("Home Setted")
 
     # Publish Setpoint
-    self.d.pubLocalPosition(0, 0, 0)
+    self.d.setLocalPosition(0, 0, 0)
 
     # Set Mode
     rospy.loginfo("Mode Setting...")
     self.d.setMode("OFFBOARD")
     while not rospy.is_shutdown() and self.d.getMode() != "OFFBOARD":
       r.sleep()
-      self.d.pubLocalPosition(0, 0, 0)
+      self.d.setLocalPosition(0, 0, 0)
       self.d.setMode("OFFBOARD")
     rospy.loginfo("Mode [OFFBOARD] Setted")
     
@@ -157,7 +175,8 @@ class DroneControl:
       # Process
 
       # Output
-      self.d.pubLocalPosition(6.5, 0, 2.1)
+      self.d.setLocalPosition(6.5, 0, 2.1)
+      self.d.setVelocity(4)
 
       r.sleep()
 
