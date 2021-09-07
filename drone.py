@@ -1,4 +1,6 @@
 import rospy
+from math import radians
+from tf.transformations import quaternion_from_euler
 from geometry_msgs.msg import PoseStamped, Twist
 from mavros_msgs.msg import State, HomePosition
 from sensor_msgs.msg import Image
@@ -65,13 +67,19 @@ class DroneFlight(Drone):
     super(DroneFlight, self).__init__()
 
   # Publisher Data Generation
-  def setLocalPosition_(self, x, y, z):
+  def setLocalPosition_(self, x, y, z, yaw):
     lp = PoseStamped()
     
     lp.header.stamp = rospy.Time.now()
     lp.pose.position.x = x
     lp.pose.position.y = y
     lp.pose.position.z = z
+
+    q = quaternion_from_euler(0, 0, radians(yaw))
+    lp.pose.orientation.x = q[0]
+    lp.pose.orientation.y = q[1]
+    lp.pose.orientation.z = q[2]
+    lp.pose.orientation.w = q[3]
 
     self.local_position_pv = lp
   
@@ -85,8 +93,8 @@ class DroneFlight(Drone):
     self.velocity_pv = v
 
   # Publisher Publish with Data
-  def setLocalPosition(self, x, y, z):
-    self.setLocalPosition_(x, y, z)
+  def setLocalPosition(self, x, y, z, yaw = 0):
+    self.setLocalPosition_(x, y, z, yaw)
     self.pubLocalPosition()
   
   def setVelocity(self, vel):
