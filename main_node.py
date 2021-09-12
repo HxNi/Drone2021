@@ -3,6 +3,9 @@ import rospy
 from math import sqrt
 from drone import DroneFlight
 
+from cv_bridge import CvBridge
+import cv2 as cv 
+
 class DroneControl:
   def __init__(self):
     self.d = DroneFlight()
@@ -95,6 +98,15 @@ class DroneControl:
                           self.vp[self.current_vp][2],
                           self.vp[self.current_vp][3],
                           self.vp[self.current_vp][4])
+
+      # ImageOpenCV
+      bridge = CvBridge()
+      
+      cv2_img = bridge.imgmsg_to_cv2(self.d.depth_image_sv, 'passthrough')
+
+      cv.imshow('test', cv2_img)
+      cv.waitKey(0)
+      cv.destroyAllWindows()
 
       r.sleep()
     
