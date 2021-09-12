@@ -68,7 +68,8 @@ class DroneControl:
 
       # Input
       lp = self.d.getLocalPosition()
-      s = "%+.2f %+.2f %+.2f" % (lp.x, lp.y, lp.z)
+      dist = sqrt((self.wp[self.current_wp][0] - lp.x)**2 + (self.wp[self.current_wp][1] - lp.y)**2 + (self.wp[self.current_wp][2] - lp.z)**2)
+      s = "%+.2f %+.2f %+.2f D %+.2f" % (lp.x, lp.y, lp.z, dist)
       rospy.loginfo(s)
 
       # Process
@@ -119,13 +120,13 @@ class DroneControl:
     if not self.takeoff:
       dist = sqrt((self.tp[0] - lp.x)**2 + (self.tp[1] - lp.y)**2 + (self.tp[2] - lp.z)**2)
 
-      if dist < 0.2:
+      if dist < 0.3:
         rospy.loginfo("Take Off")
         self.takeoff = True
     else:
       dist = sqrt((self.wp[self.current_wp][0] - lp.x)**2 + (self.wp[self.current_wp][1] - lp.y)**2 + (self.wp[self.current_wp][2] - lp.z)**2)
 
-      if dist < 0.2:
+      if dist < 0.3:
         rospy.loginfo("WayPoint Reached")
         self.current_wp += 1
         self.current_vp += 1
