@@ -8,13 +8,18 @@ class DroneControl:
     self.d = DroneFlight()
     self.initialized = False
     self.completed = False
-    self.wp =  [[0, 0, 2.1, 0],
-               [5.5, 0, 2.1, 0], [6.5, 0, 2.1, 0],
-               [11.5, 2.5, 2.1, 0], [12.5, 2.5, 2.1, 0],
-               [17.5, 0, 2.1, 0], [18.5, 0, 2.1, 0],
-               [23.5, 2.5, 2.1, 0], [24.5, 2.5, 2.1, 0],
-               [29, 2.5, 2.1, 0], [29, -7.5, 2.1, 0], [29, -8.5, 2.1, 0],]
+    #self.wp =  [[0, 0, 2.1, 0],
+    #           [5.5, 0, 2.1, 0], [6.5, 0, 2.1, 0],
+    #           [11.5, 2.5, 2.1, 0], [12.5, 2.5, 2.1, 0],
+    #           [17.5, 0, 2.1, 0], [18.5, 0, 2.1, 0],
+    #           [23.5, 2.5, 2.1, 0], [24.5, 2.5, 2.1, 0],
+    #           [29, 2.5, 2.1, -90], [29, -7.5, 2.1, -90], [29, -8.5, 2.1, -90],]
+    self.tp = [0, 0, 10, 0]
+    self.wp = [[10, 0, 10, 0], [0, 0, 10, 0]]
+    self.vp = [[1, 0, 0, 0, 0], [-1, 0, 0, 0, 0]]
+    self.takeoff = False
     self.current_wp = 0
+    self.current_vp = 0
 
   def init(self):
     r = rospy.Rate(4)
@@ -56,7 +61,7 @@ class DroneControl:
   
   def process(self):
     r = rospy.Rate(3)
-    while not rospy.is_shutdown() and self.initialized:
+    while not rospy.is_shutdown() and self.initialized and not self.completed:
       if not self.d.isArmed():
         self.initialized = False
         continue
@@ -72,22 +77,61 @@ class DroneControl:
         break
 
       # Output
-      self.d.setLocalPosition(self.wp[self.current_wp][0], self.wp[self.current_wp][1], self.wp[self.current_wp][2], self.wp[self.current_wp][3])
-      #self.d.setVelocity(1)
+
+      if not self.takeoff:
+        self.d.setLocalPosition(self.tp[0],
+                                self.tp[1],
+                                self.tp[2],
+                                self.tp[3])
+      else:
+        #self.d.setLocalPosition(self.wp[self.current_wp][0], 
+        #                        self.wp[self.current_wp][1], 
+        #                        self.wp[self.current_wp][2], 
+        #                        self.wp[self.current_wp][3])
+      
+        self.d.setVelocity(self.vp[self.current_vp][0],
+                          self.vp[self.current_vp][1],
+                          self.vp[self.current_vp][2],
+                          self.vp[self.current_vp][3],
+                          self.vp[self.current_vp][4])
 
       r.sleep()
+    
+    while not rospy.is_shutdown() and self.initialized:
+      self.d.setLocalPosition(0, 0, 2.1)
+
+      lp = self.d.getLocalPosition()
+      dist = sqrt(lp.x**2 + lp.y**2 + (2.1 - lp.z)**2)
+      if dist < 0.5:
+        break
+
+      r.sleep()
+
+    rospy.loginfo("Mode Setting...")
+    self.d.setMode("AUTO.LAND")
+    while not rospy.is_shutdown() and self.d.getMode() != "AUTO.LAND":
+      pass
+    rospy.loginfo("Mode [AUTO.LAND] Setted")
   
   def update_wp_reach(self):
     lp = self.d.getLocalPosition()
     
-    dist = sqrt((self.wp[self.current_wp][0] - lp.x)**2 + (self.wp[self.current_wp][1] - lp.y)**2 + (self.wp[self.current_wp][2] - lp.z)**2)
+    if not self.takeoff:
+      dist = sqrt((self.tp[0] - lp.x)**2 + (self.tp[1] - lp.y)**2 + (self.tp[2] - lp.z)**2)
 
-    if dist < 0.2:
-      rospy.loginfo("WayPoint Reached")
-      self.current_wp += 1
-      if len(self.wp) == self.current_wp:
-        rospy.loginfo("Mission Complete")
-        self.completed = True
+      if dist < 0.2:
+        rospy.loginfo("Take Off")
+        self.takeoff = True
+    else:
+      dist = sqrt((self.wp[self.current_wp][0] - lp.x)**2 + (self.wp[self.current_wp][1] - lp.y)**2 + (self.wp[self.current_wp][2] - lp.z)**2)
+
+      if dist < 0.2:
+        rospy.loginfo("WayPoint Reached")
+        self.current_wp += 1
+        self.current_vp += 1
+        if len(self.wp) == self.current_wp:
+          rospy.loginfo("Mission Complete")
+          self.completed = True
 
 if __name__ == '__main__':
   rospy.init_node('main', anonymous=True)

@@ -1,8 +1,8 @@
 import rospy
 from math import radians
 from tf.transformations import quaternion_from_euler
-from geometry_msgs.msg import PoseStamped, Twist
-from mavros_msgs.msg import State, HomePosition
+from geometry_msgs.msg import PoseStamped, Twist, Vector3Stamped
+from mavros_msgs.msg import State, HomePosition, AttitudeTarget
 from sensor_msgs.msg import Image
 from mavros_msgs.srv import CommandBool, SetMode
 
@@ -13,6 +13,9 @@ class Drone(object):
     # Publisher Variables
     self.local_position_pv = PoseStamped()
     self.velocity_pv = Twist()
+    self.accel_pv = Vector3Stamped()
+
+    self.attitude_pv = AttitudeTarget()
 
     # Subscriber Variables
     self.state_sv = State()
@@ -24,6 +27,7 @@ class Drone(object):
     # Publisher Init
     self.LocalPositionPb = rospy.Publisher('/mavros/setpoint_position/local', PoseStamped, queue_size=10)
     self.VelocityPb = rospy.Publisher('/mavros/setpoint_velocity/cmd_vel_unstamped', Twist, queue_size=10)
+    self.AccelPb = rospy.Publisher('mavros/setpoint_accel/accel', Vector3Stamped, queue_size=10)
 
     # Subscriber Init
     rospy.Subscriber('/mavros/state', State, self.stateCb)
@@ -44,6 +48,12 @@ class Drone(object):
   
   def pubVelocity(self):
     self.VelocityPb.publish(self.velocity_pv)
+  
+  def pubAccel(self):
+    self.AccelPb.publish(self.accel_pv)
+
+  def pubAttitude(self):
+    self.AttitudePb.publish(self.attitude_pv)
 
   # Subscriber Subscribe(Callback)
   def stateCb(self, msg):
@@ -83,22 +93,25 @@ class DroneFlight(Drone):
 
     self.local_position_pv = lp
   
-  def setVelocity_(self, x, y):
+  def setVelocity_(self, x, y, roll, pitch, yaw):
     v = Twist()
 
     v.linear.x = x
     v.linear.y = y
-    v.linear.z = 0
+
+    v.angular.x = roll
+    v.angular.y = pitch
+    v.angular.z = yaw
 
     self.velocity_pv = v
 
   # Publisher Publish with Data
-  def setLocalPosition(self, x, y, z, yaw = 0):
+  def setLocalPosition(self, x, y, z, yaw=0):
     self.setLocalPosition_(x, y, z, yaw)
     self.pubLocalPosition()
   
-  def setVelocity(self, x, y):
-    self.setVelocity_(x, y)
+  def setVelocity(self, x, y, roll, pitch, yaw):
+    self.setVelocity_(x, y, radians(roll), radians(pitch), radians(yaw))
     self.pubVelocity()
 
   # Subscriber Data Consumption
