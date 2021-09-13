@@ -19,7 +19,7 @@ class DroneControl:
     #           [17.5, 0, 2.1, 0], [18.5, 0, 2.1, 0],
     #           [23.5, 2.5, 2.1, 0], [24.5, 2.5, 2.1, 0],
     #           [29, 2.5, 2.1, -90], [29, -7.5, 2.1, -90], [29, -8.5, 2.1, -90],]
-    self.tp = [0, 0, 10, 0]
+    self.tp = [0, 0, 2.1, 0]
     self.wp = [[10, 0, 2.1, 0], [0, 0, 2.1, 0]]
     self.vp = [[1, 0, 0, 0, 0], [-1, 0, 0, 0, 0]]
     self.takeoff = False
@@ -85,7 +85,6 @@ class DroneControl:
       self.image_show()
 
       # Output
-
       if not self.takeoff:
         self.d.setLocalPosition(self.tp[0],
                                 self.tp[1],
@@ -98,16 +97,7 @@ class DroneControl:
         #                        self.wp[self.current_wp][3])
       
         self.d.setVelocity(self.vp[self.current_vp][0],
-                          self.vp[self.current_vp][1])
-
-      # ImageOpenCV
-      bridge = CvBridge()
-      
-      cv2_img = bridge.imgmsg_to_cv2(self.d.depth_image_sv, 'passthrough')
-
-      cv.imshow('test', cv2_img)
-      cv.waitKey(0)
-      cv.destroyAllWindows()
+                           self.vp[self.current_vp][1])
 
       r.sleep()
     
