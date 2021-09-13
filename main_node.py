@@ -20,7 +20,7 @@ class DroneControl:
     #           [23.5, 2.5, 2.1, 0], [24.5, 2.5, 2.1, 0],
     #           [29, 2.5, 2.1, -90], [29, -7.5, 2.1, -90], [29, -8.5, 2.1, -90],]
     self.tp = [0, 0, 2.1, 0]
-    self.wp = [[10, 0, 2.1, 0], [0, 0, 2.1, 0]]
+    self.wp = [[5.5, 0, 2.1, 0], [0, 0, 2.1, 0]]
     self.vp = [[1, 0, 0, 0, 0], [-1, 0, 0, 0, 0]]
     self.takeoff = False
     self.current_wp = 0
@@ -138,8 +138,10 @@ class DroneControl:
           self.completed = True
   
   def image_show(self):
-    img = self.br.imgmsg_to_cv2(self.d.depth_image_sv)
-    cv2.imshow('depth', img)
+    dimg = self.br.imgmsg_to_cv2(self.d.depth_image_sv)
+    cv2.imshow('depth', dimg)
+    simg = self.br.imgmsg_to_cv2(self.d.scene_sv)
+    cv2.imshow('scene', simg)
     cv2.waitKey(1)
 
 if __name__ == '__main__':
