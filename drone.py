@@ -93,15 +93,11 @@ class DroneFlight(Drone):
 
     self.local_position_pv = lp
   
-  def setVelocity_(self, x, y, roll, pitch, yaw):
+  def setVelocity_(self, x, y):
     v = Twist()
 
     v.linear.x = x
     v.linear.y = y
-
-    v.angular.x = roll
-    v.angular.y = pitch
-    v.angular.z = yaw
 
     self.velocity_pv = v
 
@@ -110,8 +106,8 @@ class DroneFlight(Drone):
     self.setLocalPosition_(x, y, z, yaw)
     self.pubLocalPosition()
   
-  def setVelocity(self, x, y, roll, pitch, yaw):
-    self.setVelocity_(x, y, radians(roll), radians(pitch), radians(yaw))
+  def setVelocity(self, x, y):
+    self.setVelocity_(x, y)
     self.pubVelocity()
 
   # Subscriber Data Consumption

@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from cv_bridge import CvBridge
+import cv2
 import rospy
 from math import sqrt
 from drone import DroneFlight
@@ -20,6 +22,7 @@ class DroneControl:
     self.takeoff = False
     self.current_wp = 0
     self.current_vp = 0
+    self.br = CvBridge()
 
   def init(self):
     r = rospy.Rate(4)
@@ -69,13 +72,14 @@ class DroneControl:
       # Input
       lp = self.d.getLocalPosition()
       dist = sqrt((self.wp[self.current_wp][0] - lp.x)**2 + (self.wp[self.current_wp][1] - lp.y)**2 + (self.wp[self.current_wp][2] - lp.z)**2)
-      s = "%+.2f %+.2f %+.2f D %+.2f" % (lp.x, lp.y, lp.z, dist)
+      s = "%+.2f %+.2f %+.2f D %.2f" % (lp.x, lp.y, lp.z, dist)
       rospy.loginfo(s)
 
       # Process
       self.update_wp_reach()
       if self.completed:
         break
+      self.image_show()
 
       # Output
 
@@ -91,10 +95,7 @@ class DroneControl:
         #                        self.wp[self.current_wp][3])
       
         self.d.setVelocity(self.vp[self.current_vp][0],
-                          self.vp[self.current_vp][1],
-                          self.vp[self.current_vp][2],
-                          self.vp[self.current_vp][3],
-                          self.vp[self.current_vp][4])
+                          self.vp[self.current_vp][1])
 
       r.sleep()
     
@@ -120,19 +121,24 @@ class DroneControl:
     if not self.takeoff:
       dist = sqrt((self.tp[0] - lp.x)**2 + (self.tp[1] - lp.y)**2 + (self.tp[2] - lp.z)**2)
 
-      if dist < 0.3:
+      if dist < 0.5:
         rospy.loginfo("Take Off")
         self.takeoff = True
     else:
-      dist = sqrt((self.wp[self.current_wp][0] - lp.x)**2 + (self.wp[self.current_wp][1] - lp.y)**2 + (self.wp[self.current_wp][2] - lp.z)**2)
+      dist = sqrt((self.wp[self.current_wp][0] - lp.x)**2 + (self.wp[self.current_wp][1] - lp.y)**2)
 
-      if dist < 0.3:
+      if dist < 0.5:
         rospy.loginfo("WayPoint Reached")
         self.current_wp += 1
         self.current_vp += 1
         if len(self.wp) == self.current_wp:
           rospy.loginfo("Mission Complete")
           self.completed = True
+  
+  def image_show(self):
+    img = self.br.imgmsg_to_cv2(self.d.depth_image_sv)
+    cv2.imshow('depth', img)
+    cv2.waitKey(1)
 
 if __name__ == '__main__':
   rospy.init_node('main', anonymous=True)
