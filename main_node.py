@@ -117,7 +117,12 @@ class DroneControl:
     
     dist = sqrt((self.wp[self.current_wp][1][0] - lp.x)**2 + (self.wp[self.current_wp][1][1] - lp.y)**2)
 
-    if dist < 0.5:
+    rng = 0.3
+    if self.wp[self.current_wp][0] == 'p':
+      rng = 0.3
+    elif self.wp[self.current_wp][0] == 'v':
+      rng = 0.5
+    if dist < rng:
       rospy.loginfo("WayPoint Reached")
       self.current_wp += 1
       if len(self.wp) == self.current_wp:
@@ -135,6 +140,7 @@ class DroneControl:
     cv2.imshow('depth', dimg)
     simg = self.br.imgmsg_to_cv2(self.d.scene_sv)
     cv2.imshow('scene', simg)
+    cv2.imwrite('f.png', simg)
     cv2.waitKey(1)
   
   def land(self):
@@ -144,7 +150,7 @@ class DroneControl:
 
       lp = self.d.getLocalPosition()
       dist = sqrt(lp.x**2 + lp.y**2 + (2.1 - lp.z)**2)
-      if dist < 0.5:
+      if dist < 0.3:
         break
 
       r.sleep()
