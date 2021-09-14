@@ -117,11 +117,11 @@ class DroneControl:
     
     dist = sqrt((self.wp[self.current_wp][1][0] - lp.x)**2 + (self.wp[self.current_wp][1][1] - lp.y)**2)
 
-    rng = 0.3
+    rng = 0.2
     if self.wp[self.current_wp][0] == 'p':
-      rng = 0.3
+      rng = 0.2
     elif self.wp[self.current_wp][0] == 'v':
-      rng = 0.5
+      rng = 0.4
     if dist < rng:
       rospy.loginfo("WayPoint Reached")
       self.current_wp += 1
