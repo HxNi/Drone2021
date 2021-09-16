@@ -217,7 +217,7 @@ class DroneControl:
       cv2.imshow('scene + edge detect',simg)
       cv2.waitKey(1)
     except:
-      pass
+      rospy.loginfo("Error in image_show()")
   
   def land(self):
     r = rospy.Rate(3)
