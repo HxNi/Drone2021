@@ -1,12 +1,13 @@
 #!/usr/bin/env python
+from numpy.core.records import array
 from cv_bridge import CvBridge
 import cv2
 import rospy
 from math import sqrt
 from drone import DroneFlight
 
-from cv_bridge import CvBridge
-import cv2 as cv 
+import matplotlib.pyplot as plt
+import numpy as np
 
 class DroneControl:
   def __init__(self):
@@ -155,10 +156,65 @@ class DroneControl:
     rospy.loginfo(s)
   
   def image_show(self):
+
+    #Logamathic trasform
+    def logTransformImage(img):
+      c = 255 / np.log1p(np.max(img))
+      img_log = c*np.log1p(img)
+      # Specify the data type
+      img_log = np.array(img_log,dtype=np.uint8)
+
+      return img_log  
+
     dimg = self.br.imgmsg_to_cv2(self.d.depth_image_sv)
-    cv2.imshow('depth', dimg)
     simg = self.br.imgmsg_to_cv2(self.d.scene_sv)
-    cv2.imshow('scene', simg)
+
+    dimg_log = logTransformImage(dimg)
+
+    # Image making
+    ret, dimg_log = cv2.threshold( dimg_log, 30,255, cv2.THRESH_TOZERO)
+    ret, dimg_log = cv2.threshold( dimg_log, 70 ,255, cv2.THRESH_TOZERO_INV)
+
+    cv2.imshow('dimg_log', dimg_log)
+
+    ret, dimg_e_log = cv2.threshold( dimg_log, 30 ,255, cv2.THRESH_BINARY_INV)
+
+    dimg_e_log_BGR = cv2.cvtColor(dimg_e_log, cv2.COLOR_GRAY2BGR)
+    simg_mask = cv2.add(simg, dimg_e_log_BGR)
+
+    #HSV threshold
+    simg_HSV = cv2.cvtColor(simg_mask, cv2.COLOR_BGR2HSV)
+
+    (h, s, v) = cv2.split(simg_HSV)
+
+
+    ORANGE_MIN = np.array([0, 0, 165],np.uint8)
+    ORANGE_MAX = np.array([179, 20, 190],np.uint8)
+
+    frame_threshed = cv2.inRange(simg_HSV, ORANGE_MIN, ORANGE_MAX)
+
+    cv2.imshow('frame_threshed', frame_threshed)
+ 
+    # edge detect
+    contours, _ = cv2.findContours(frame_threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    max = 0
+    target = 0
+
+    for cont in contours:
+      approx = cv2.approxPolyDP(cont, cv2.arcLength(cont, True)*0.02,True)
+      vtc = len(approx)
+
+      if vtc == 4:
+        x,y,w,h = cv2.boundingRect(cont)
+        area = w*h
+        if 153600 > area and area > max:
+          max = area
+          target = cont
+
+    
+    cv2.drawContours(simg, [target], 0, (255,0,0), 2)
+
+    cv2.imshow('scene + edge detect',simg)
     cv2.waitKey(1)
   
   def land(self):
