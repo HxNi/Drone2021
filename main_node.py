@@ -13,7 +13,7 @@ class DroneControl:
     self.d = DroneFlight()
     self.initialized = False
     self.completed = False
-    self.wp =  [['p', [3, 0, 5, 0]], ['a', [6, 0, 5, 0], -5], ['a', [9, 0, 5, 0], -5], ['p', [4, 0, 5, 0]]]
+    self.wp =  [['p', [3, 0, 5, 90]], ['a', [6, 0, 5, 90], -5], ['a', [9, 0, 5, 90], -5], ['p', [4, 0, 5, 90]]]
     self.tp = [0, 0, 5, 0]
     # self.wp = [['v', [5, 0, 2.1,0], [1, 0]], ['p', [7, 0, 2.1,0]], ['p', [9, 1.25, 2.1,0]],
     #          ['p', [11, 2.5, 2.1,0]], ['p', [13, 2.5, 2.1,0]], ['p', [15, 1.25, 2.1,0]],
@@ -125,7 +125,7 @@ class DroneControl:
                                   self.wp[self.current_wp][1][2], 
                                   self.wp[self.current_wp][1][3])
         elif self.stage / 4 == 1:
-          self.d.setAttitude(self.wp[self.current_wp][2], 0, 0)
+          self.d.setAttitude(self.wp[self.current_wp][2], 0, self.wp[self.current_wp][1][3])
         self.stage += 1
         if self.stage / 4 >= 2:
           self.stage = 0
