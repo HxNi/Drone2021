@@ -1,7 +1,7 @@
 import rospy
 from math import radians
 from tf.transformations import quaternion_from_euler
-from geometry_msgs.msg import PoseStamped, Twist, Vector3Stamped
+from geometry_msgs.msg import PoseStamped, Twist, TwistStamped
 from mavros_msgs.msg import State, HomePosition, AttitudeTarget
 from sensor_msgs.msg import Image
 from mavros_msgs.srv import CommandBool, SetMode
@@ -13,8 +13,6 @@ class Drone(object):
     # Publisher Variables
     self.local_position_pv = PoseStamped()
     self.velocity_pv = Twist()
-    self.accel_pv = Vector3Stamped()
-
     self.attitude_pv = AttitudeTarget()
 
     # Subscriber Variables
@@ -27,7 +25,7 @@ class Drone(object):
     # Publisher Init
     self.LocalPositionPb = rospy.Publisher('/mavros/setpoint_position/local', PoseStamped, queue_size=10)
     self.VelocityPb = rospy.Publisher('/mavros/setpoint_velocity/cmd_vel_unstamped', Twist, queue_size=10)
-    self.AccelPb = rospy.Publisher('mavros/setpoint_accel/accel', Vector3Stamped, queue_size=10)
+    self.AttitudePb = rospy.Publisher('mavros/setpoint_raw/attitude', AttitudeTarget, queue_size=10)
 
     # Subscriber Init
     rospy.Subscriber('/mavros/state', State, self.stateCb)
@@ -49,9 +47,6 @@ class Drone(object):
   def pubVelocity(self):
     self.VelocityPb.publish(self.velocity_pv)
   
-  def pubAccel(self):
-    self.AccelPb.publish(self.accel_pv)
-
   def pubAttitude(self):
     self.AttitudePb.publish(self.attitude_pv)
 
@@ -100,6 +95,23 @@ class DroneFlight(Drone):
     v.linear.y = y
 
     self.velocity_pv = v
+  
+  def setAttitude_(self, r, p, y):
+    a = AttitudeTarget()
+
+    a.type_mask = AttitudeTarget.IGNORE_ROLL_RATE \
+                | AttitudeTarget.IGNORE_PITCH_RATE \
+                | AttitudeTarget.IGNORE_YAW_RATE
+
+    q = quaternion_from_euler(r, p, y)
+    a.orientation.x = q[0]
+    a.orientation.y = q[1]
+    a.orientation.z = q[2]
+    a.orientation.w = q[3]
+
+    a.thrust = 0.5
+
+    self.attitude_pv = a
 
   # Publisher Publish with Data
   def setLocalPosition(self, x, y, z, yaw=0):
@@ -109,6 +121,10 @@ class DroneFlight(Drone):
   def setVelocity(self, x, y):
     self.setVelocity_(x, y)
     self.pubVelocity()
+  
+  def setAttitude(self, r, p, y):
+    self.setAttitude_(radians(r), radians(p), radians(y))
+    self.pubAttitude()
 
   # Subscriber Data Consumption
   def isFCUConnected(self):
