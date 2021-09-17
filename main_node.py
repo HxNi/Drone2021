@@ -15,21 +15,21 @@ class DroneControl:
     self.initialized = False
     self.completed = False
     self.tp = [0, 0, 2.1, 0]
-    self.wp = [['a', [3, 0, 0], 1]]
-    # self.wp = [['v', [1, 0], 3], ['p', [7, 0, 2.1,0]], ['p', [9, 1.25, 2.1,0]],
-    #          ['p', [11, 2.5, 2.1,0]], ['p', [13, 2.5, 2.1,0]], ['p', [15, 1.25, 2.1,0]],
-    #         ['p', [17, 0, 2.1,0]], ['p', [19, 0, 2.1,0]], ['p', [21, 1.25, 2.1,0]],
-    #         ['p', [23, 2.5, 2.1,0],[1, 0.625]], ['p', [25, 2.5, 2.1,0]], ['p', [29, 2.5, 2.1,-90]], 
-    #         ['p', [29, -7, 2.1,-90]], ['p', [29, -9, 2.1,-90]], ['p', [29, -12.9, 2.1,-120]], 
-    #       ['p', [28.25, -13.65, 2.1,-135]], ['p', [26.85, -15.05, 2.1,-135]], ['p', [25.05, -16.85, 2.1,-150]],
-    #         ['p', [22.35, -16.85, 2.1,-180]], ['p', [21.35, -16.85, 2.1,-180]], ['p', [17.85, -16.85, 2.1,-210]], 
-    #         ['p', [15.7, -14.7, 2.1,-225]], ['p', [14.3, -13.3, 2.1,-225]], ['p', [12.25, -11.25, 2.1,-255]], 
-    #       ['p', [12.25, -10.4, 2.1,-270]], ['p', [12.25, -8.4, 2.1,-270]], ['p', [12.25, -6.25, 2.1,-225]],
-    #       ['p', [9.35, -6.25, 2.1,-180]], ['p', [7.35, -6.25, 2.1,-180]], ['p', [5.8, -6.25, 2.1,-135]],
-    #       ['p', [5.8, -10, 2.1,-90]], ['p', [5.8, -12, 2.1,-90]], ['p', [5.8, -12.95, 2.1,-120]], 
-    #       ['p', [5.65, -13.1, 2.1,-135]], ['a', [0, 3, -135], 1], ['p', [3.95, -14, 2.1,-150]], 
-    #       ['p', [3, -14.8, 2.1,-180]], ['p', [1, -14.8, 2.1,-180]], ['p', [-0.95, -14.8, 2.1,-225]],
-    #       ['p', [-0.95, -8.05, 2.1,-270]], ['p', [-0.95, -6.05, 2.1,-270]], ['p', [0, 0, 2.1,0]], ['p', [0, 0, 0, 0]]]
+    #self.wp = [['a', [5, 0, 0], 1]]
+    self.wp =[['v', [1, 0], 3],['p', [7, 0, 2.1,0]], ['p', [9, 1.25, 2.1,0]],
+             ['p', [11, 2.5, 2.1,0]], ['p', [13, 2.5, 2.1,0]], ['p', [15, 1.25, 2.1,0]],
+            ['p', [17, 0, 2.1,0]], ['p', [19, 0, 2.1,0]], ['p', [21, 1.25, 2.1,0]],
+            ['p', [23, 2.5, 2.1,0]], ['p', [25, 2.5, 2.1,0]], ['p', [29, 2.5, 2.1,-90]], 
+            ['p', [29, -7, 2.1,-90]], ['p', [29, -9, 2.1,-90]], ['p', [29, -12.9, 2.1,-120]], 
+          ['p', [28.25, -13.65, 2.1,-135]], ['p', [26.85, -15.05, 2.1,-135]], ['p', [25.05, -16.85, 2.1,-150]],
+            ['p', [22.35, -16.85, 2.1,-180]], ['p', [21.35, -16.85, 2.1,-180]], ['p', [17.85, -16.85, 2.1,-210]], 
+            ['p', [15.7, -14.7, 2.1,-225]], ['p', [14.3, -13.3, 2.1,-225]], ['p', [12.25, -11.25, 2.1,-255]], 
+          ['p', [12.25, -10.4, 2.1,-270]], ['p', [12.25, -8.4, 2.1,-270]], ['p', [12.25, -6.25, 2.1,-225]],
+          ['p', [9.35, -6.25, 2.1,-180]], ['p', [7.35, -6.25, 2.1,-180]], ['p', [5.8, -6.25, 2.1,-135]],
+          ['p', [5.8, -10, 2.1,-90]], ['p', [5.8, -12, 2.1,-90]], ['p', [5.8, -12.95, 2.1,-120]], 
+          ['p', [5.65, -13.1, 2.1,-135]], ['p', [4.25, -14.5, 2.1,-135]], ['p', [3.95, -14, 2.1,-150]], 
+          ['p', [3, -14.8, 2.1,-180]], ['p', [1, -14.8, 2.1,-180]], ['p', [-0.95, -14.8, 2.1,-225]],
+          ['p', [-0.95, -8.05, 2.1,-270]], ['p', [-0.95, -6.05, 2.1,-270]], ['p', [0, 0, 2.1,0]]]
     self.detect_rng = 0.2
     self.current_wp = 0
     self.br = CvBridge()
@@ -38,6 +38,22 @@ class DroneControl:
     self.post_process = False
     self.post_process_t = 0.5
     self.stuck = False
+    self.exdists = self.d.getLocalPosition()
+    self.lpCount = 0
+
+  def checkStuck(self):
+    lp = self.d.getLocalPosition()
+    if lp.x - self.exdists.x < 0.01 and lp.y - self.exdists.y < 0.01:
+      self.lpCount+=1
+      rospy.loginfo("lpCount : %d" % self.lpCount)
+    else:
+      self.lpCount = 0
+    
+    if self.lpCount > 20:
+      self.lpCount = 0
+      return True
+    self.exdists = lp
+    return False
 
   def init(self):
     r = rospy.Rate(4)
@@ -114,7 +130,7 @@ class DroneControl:
       self.log_position(self.wp[self.current_wp][1])
       try:
         self.image_show()
-      except Exception, e:
+      except Exception as e:
         rospy.loginfo(str(e))
 
       # Process
@@ -177,7 +193,7 @@ class DroneControl:
         self.stuck = False
       else:
         self.rates_count += 1
-    elif False:
+    elif self.checkStuck():
       self.rates_count = 0
       self.stuck = True 
     elif dist < self.detect_rng and orien < 5:
@@ -201,7 +217,6 @@ class DroneControl:
     rospy.loginfo(s)
   
   def image_show(self):
-
     #Logamathic trasform
     def logTransformImage(img):
       c = 255 / np.log1p(np.max(img))
@@ -210,56 +225,60 @@ class DroneControl:
       img_log = np.array(img_log,dtype=np.uint8)
 
       return img_log  
-    
-    dimg = self.br.imgmsg_to_cv2(self.d.depth_image_sv)
-    simg = self.br.imgmsg_to_cv2(self.d.scene_sv)
+
+    try:
+      dimg = self.br.imgmsg_to_cv2(self.d.depth_image_sv)
+      simg = self.br.imgmsg_to_cv2(self.d.scene_sv)
+
+      dimg_log = logTransformImage(dimg)
+
+      # Depht image making
+      ret, dimg_log = cv2.threshold( dimg_log, 30,255, cv2.THRESH_TOZERO)
+      ret, dimg_log = cv2.threshold( dimg_log, 75 ,255, cv2.THRESH_TOZERO_INV)
+      ret, dimg_e_log = cv2.threshold( dimg_log, 30 ,255, cv2.THRESH_BINARY_INV)
+
+      dimg_e_log_BGR = cv2.cvtColor(dimg_e_log, cv2.COLOR_GRAY2BGR)
+      simg_mask = cv2.add(simg, dimg_e_log_BGR)
+
+      cv2.imshow('simg_mask', simg_mask)
+
+      # Scene HSV threshold
+      simg_HSV = cv2.cvtColor(simg_mask, cv2.COLOR_BGR2HSV)
+
+      (h, s, v) = cv2.split(simg_HSV)
+
+
+      ORANGE_MIN = np.array([0, 1, 155],np.uint8)
+      ORANGE_MAX = np.array([179, 19, 195],np.uint8)
+
+      frame_threshed = cv2.inRange(simg_HSV, ORANGE_MIN, ORANGE_MAX)
+
+      cv2.imshow('frame_threshed', frame_threshed)
   
-    dimg_log = logTransformImage(dimg)
+      # edge detect
+      contours, _ = cv2.findContours(frame_threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+      max = 1600
+      target = 0
 
-    # Image making
-    ret, dimg_log = cv2.threshold( dimg_log, 30,255, cv2.THRESH_TOZERO)
-    ret, dimg_log = cv2.threshold( dimg_log, 70 ,255, cv2.THRESH_TOZERO_INV)
+      for cont in contours:
+        approx = cv2.approxPolyDP(cont, cv2.arcLength(cont, True)*0.02,True)
+        vtc = len(approx)
 
-    cv2.imshow('dimg_log', dimg_log)
+        if vtc == 4:
+          x,y,w,h = cv2.boundingRect(cont)
+          area = w*h
+          if 153600 > area and area > max:
+            max = area
+            target = cont
 
-    ret, dimg_e_log = cv2.threshold( dimg_log, 30 ,255, cv2.THRESH_BINARY_INV)
+      if type(target) != type(1):
+        cv2.drawContours(simg, [target], 0, (255,0,0), 2)
 
-    dimg_e_log_BGR = cv2.cvtColor(dimg_e_log, cv2.COLOR_GRAY2BGR)
-    simg_mask = cv2.add(simg, dimg_e_log_BGR)
-
-    #HSV threshold
-    simg_HSV = cv2.cvtColor(simg_mask, cv2.COLOR_BGR2HSV)
-
-    (h, s, v) = cv2.split(simg_HSV)
-
-
-    ORANGE_MIN = np.array([0, 0, 165],np.uint8)
-    ORANGE_MAX = np.array([179, 20, 190],np.uint8)
-
-    frame_threshed = cv2.inRange(simg_HSV, ORANGE_MIN, ORANGE_MAX)
-  
-    cv2.imshow('frame_threshed', frame_threshed)
-
-    # edge detect
-    contours, _ = cv2.findContours(frame_threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    max = 0
-    target = 0
-
-    for cont in contours:
-      approx = cv2.approxPolyDP(cont, cv2.arcLength(cont, True)*0.02,True)
-      vtc = len(approx)
-
-      if vtc == 4:
-        x,y,w,h = cv2.boundingRect(cont)
-        area = w*h
-        if 153600 > area and area > max:
-          max = area
-          target = cont
-
-  
-    cv2.drawContours(simg, [target], 0, (255,0,0), 2)
-    cv2.imshow('scene + edge detect',simg)
-    cv2.waitKey(1)
+      cv2.imshow('scene + edge detect',simg)
+      cv2.waitKey(1)
+    except Exception as e:
+      rospy.loginfo(e)
+      rospy.loginfo("Error in image_show()")
   
   def land(self):
     r = rospy.Rate(3)
