@@ -15,7 +15,7 @@ class DroneControl:
     self.initialized = False
     self.completed = False
     self.tp = [0, 0, 2.1, 0]
-    self.wp = [['v', [1, 0], 1]]
+    self.wp = [['a', [3, 0, 0], 1]]
     # self.wp = [['v', [1, 0], 3], ['p', [7, 0, 2.1,0]], ['p', [9, 1.25, 2.1,0]],
     #          ['p', [11, 2.5, 2.1,0]], ['p', [13, 2.5, 2.1,0]], ['p', [15, 1.25, 2.1,0]],
     #         ['p', [17, 0, 2.1,0]], ['p', [19, 0, 2.1,0]], ['p', [21, 1.25, 2.1,0]],
@@ -112,7 +112,10 @@ class DroneControl:
 
       # Input
       self.log_position(self.wp[self.current_wp][1])
-      self.image_show()
+      try:
+        self.image_show()
+      except Exception, e:
+        rospy.loginfo(str(e))
 
       # Process
       self.update_wp_reach()
@@ -207,59 +210,56 @@ class DroneControl:
       img_log = np.array(img_log,dtype=np.uint8)
 
       return img_log  
-    try:
-      dimg = self.br.imgmsg_to_cv2(self.d.depth_image_sv)
-      simg = self.br.imgmsg_to_cv2(self.d.scene_sv)
-
-      dimg_log = logTransformImage(dimg)
-
-      # Image making
-      ret, dimg_log = cv2.threshold( dimg_log, 30,255, cv2.THRESH_TOZERO)
-      ret, dimg_log = cv2.threshold( dimg_log, 70 ,255, cv2.THRESH_TOZERO_INV)
-
-      cv2.imshow('dimg_log', dimg_log)
-
-      ret, dimg_e_log = cv2.threshold( dimg_log, 30 ,255, cv2.THRESH_BINARY_INV)
-
-      dimg_e_log_BGR = cv2.cvtColor(dimg_e_log, cv2.COLOR_GRAY2BGR)
-      simg_mask = cv2.add(simg, dimg_e_log_BGR)
-
-      #HSV threshold
-      simg_HSV = cv2.cvtColor(simg_mask, cv2.COLOR_BGR2HSV)
-
-      (h, s, v) = cv2.split(simg_HSV)
-
-
-      ORANGE_MIN = np.array([0, 0, 165],np.uint8)
-      ORANGE_MAX = np.array([179, 20, 190],np.uint8)
-
-      frame_threshed = cv2.inRange(simg_HSV, ORANGE_MIN, ORANGE_MAX)
-
-      cv2.imshow('frame_threshed', frame_threshed)
+    
+    dimg = self.br.imgmsg_to_cv2(self.d.depth_image_sv)
+    simg = self.br.imgmsg_to_cv2(self.d.scene_sv)
   
-      # edge detect
-      contours, _ = cv2.findContours(frame_threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-      max = 0
-      target = 0
+    dimg_log = logTransformImage(dimg)
 
-      for cont in contours:
-        approx = cv2.approxPolyDP(cont, cv2.arcLength(cont, True)*0.02,True)
-        vtc = len(approx)
+    # Image making
+    ret, dimg_log = cv2.threshold( dimg_log, 30,255, cv2.THRESH_TOZERO)
+    ret, dimg_log = cv2.threshold( dimg_log, 70 ,255, cv2.THRESH_TOZERO_INV)
 
-        if vtc == 4:
-          x,y,w,h = cv2.boundingRect(cont)
-          area = w*h
-          if 153600 > area and area > max:
-            max = area
-            target = cont
+    cv2.imshow('dimg_log', dimg_log)
 
-      
-      cv2.drawContours(simg, [target], 0, (255,0,0), 2)
+    ret, dimg_e_log = cv2.threshold( dimg_log, 30 ,255, cv2.THRESH_BINARY_INV)
 
-      cv2.imshow('scene + edge detect',simg)
-      cv2.waitKey(1)
-    except:
-      rospy.loginfo("Error in image_show()")
+    dimg_e_log_BGR = cv2.cvtColor(dimg_e_log, cv2.COLOR_GRAY2BGR)
+    simg_mask = cv2.add(simg, dimg_e_log_BGR)
+
+    #HSV threshold
+    simg_HSV = cv2.cvtColor(simg_mask, cv2.COLOR_BGR2HSV)
+
+    (h, s, v) = cv2.split(simg_HSV)
+
+
+    ORANGE_MIN = np.array([0, 0, 165],np.uint8)
+    ORANGE_MAX = np.array([179, 20, 190],np.uint8)
+
+    frame_threshed = cv2.inRange(simg_HSV, ORANGE_MIN, ORANGE_MAX)
+  
+    cv2.imshow('frame_threshed', frame_threshed)
+
+    # edge detect
+    contours, _ = cv2.findContours(frame_threshed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    max = 0
+    target = 0
+
+    for cont in contours:
+      approx = cv2.approxPolyDP(cont, cv2.arcLength(cont, True)*0.02,True)
+      vtc = len(approx)
+
+      if vtc == 4:
+        x,y,w,h = cv2.boundingRect(cont)
+        area = w*h
+        if 153600 > area and area > max:
+          max = area
+          target = cont
+
+  
+    cv2.drawContours(simg, [target], 0, (255,0,0), 2)
+    cv2.imshow('scene + edge detect',simg)
+    cv2.waitKey(1)
   
   def land(self):
     r = rospy.Rate(3)
