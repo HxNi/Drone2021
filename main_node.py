@@ -15,7 +15,7 @@ class DroneControl:
     self.initialized = False
     self.completed = False
     self.tp = [0, 0, 2.1, 0]
-    self.wp = [['a', [4, 0, 0], 1]]
+    self.wp = [['a', [5, 0, 0], 1]]
     # self.wp = [['v', [5, 0, 2.1,0], [1, 0]], ['p', [7, 0, 2.1,0]], ['p', [9, 1.25, 2.1,0]],
     #          ['p', [11, 2.5, 2.1,0]], ['p', [13, 2.5, 2.1,0]], ['p', [15, 1.25, 2.1,0]],
     #         ['p', [17, 0, 2.1,0]], ['p', [19, 0, 2.1,0]], ['p', [21, 1.25, 2.1,0]],
@@ -36,6 +36,7 @@ class DroneControl:
     self.rates_count = 0
     self.rates = 3
     self.post_process = False
+    self.post_process_t = 0.5
 
   def init(self):
     r = rospy.Rate(4)
@@ -135,7 +136,7 @@ class DroneControl:
   def update_wp_reach(self):
     if self.wp[self.current_wp][0] == 'a' or self.wp[self.current_wp][0] == 'v':
       if self.post_process is True:
-        if self.rates_count / self.rates >= 1:
+        if self.rates_count / self.rates >= self.post_process_t:
           self.rates_count = 0
           self.current_wp += 1
           if len(self.wp) == self.current_wp:
