@@ -15,23 +15,27 @@ class DroneControl:
     self.initialized = False
     self.completed = False
     self.tp = [0, 0, 2.1, 0]
-    self.wp = [['v', [5, 0, 2.1,0], [1, 0]], ['p', [7, 0, 2.1,0]], ['p', [9, 1.25, 2.1,0]],
-             ['p', [11, 2.5, 2.1,0]], ['p', [13, 2.5, 2.1,0]], ['p', [15, 1.25, 2.1,0]],
-            ['p', [17, 0, 2.1,0]], ['p', [19, 0, 2.1,0]], ['p', [21, 1.25, 2.1,0]],
-            ['p', [23, 2.5, 2.1,0],[1, 0.625]], ['p', [25, 2.5, 2.1,0]], ['p', [29, 2.5, 2.1,-90]], 
-            ['p', [29, -7, 2.1,-90]], ['p', [29, -9, 2.1,-90]], ['p', [29, -12.9, 2.1,-120]], 
-          ['p', [28.25, -13.65, 2.1,-135]], ['p', [26.85, -15.05, 2.1,-135]], ['p', [25.05, -16.85, 2.1,-150]],
-            ['p', [22.35, -16.85, 2.1,-180]], ['p', [21.35, -16.85, 2.1,-180]], ['p', [17.85, -16.85, 2.1,-210]], 
-            ['p', [15.7, -14.7, 2.1,-225]], ['p', [14.3, -13.3, 2.1,-225]], ['p', [12.25, -11.25, 2.1,-255]], 
-          ['p', [12.25, -10.4, 2.1,-270]], ['p', [12.25, -8.4, 2.1,-270]], ['p', [12.25, -6.25, 2.1,-225]],
-          ['p', [9.35, -6.25, 2.1,-180]], ['p', [7.35, -6.25, 2.1,-180]], ['p', [5.8, -6.25, 2.1,-135]],
-          ['p', [5.8, -10, 2.1,-90]], ['p', [5.8, -12, 2.1,-90]], ['p', [5.8, -12.95, 2.1,-120]], 
-          ['p', [5.65, -13.1, 2.1,-135]], ['a', [4.25, -14.5, 2.1,-135], 3], ['p', [3.95, -14, 2.1,-150]], 
-          ['p', [3, -14.8, 2.1,-180]], ['p', [1, -14.8, 2.1,-180]], ['p', [-0.95, -14.8, 2.1,-225]],
-          ['p', [-0.95, -8.05, 2.1,-270]], ['a', [-0.95, -6.05, 2.1,-270], 1], ['p', [0, 0, 2.1,0]], ['p', [0, 0, 0, 0]]]
+    self.wp = [['a', [4, 0, 0], 1]]
+    # self.wp = [['v', [5, 0, 2.1,0], [1, 0]], ['p', [7, 0, 2.1,0]], ['p', [9, 1.25, 2.1,0]],
+    #          ['p', [11, 2.5, 2.1,0]], ['p', [13, 2.5, 2.1,0]], ['p', [15, 1.25, 2.1,0]],
+    #         ['p', [17, 0, 2.1,0]], ['p', [19, 0, 2.1,0]], ['p', [21, 1.25, 2.1,0]],
+    #         ['p', [23, 2.5, 2.1,0],[1, 0.625]], ['p', [25, 2.5, 2.1,0]], ['p', [29, 2.5, 2.1,-90]], 
+    #         ['p', [29, -7, 2.1,-90]], ['p', [29, -9, 2.1,-90]], ['p', [29, -12.9, 2.1,-120]], 
+    #       ['p', [28.25, -13.65, 2.1,-135]], ['p', [26.85, -15.05, 2.1,-135]], ['p', [25.05, -16.85, 2.1,-150]],
+    #         ['p', [22.35, -16.85, 2.1,-180]], ['p', [21.35, -16.85, 2.1,-180]], ['p', [17.85, -16.85, 2.1,-210]], 
+    #         ['p', [15.7, -14.7, 2.1,-225]], ['p', [14.3, -13.3, 2.1,-225]], ['p', [12.25, -11.25, 2.1,-255]], 
+    #       ['p', [12.25, -10.4, 2.1,-270]], ['p', [12.25, -8.4, 2.1,-270]], ['p', [12.25, -6.25, 2.1,-225]],
+    #       ['p', [9.35, -6.25, 2.1,-180]], ['p', [7.35, -6.25, 2.1,-180]], ['p', [5.8, -6.25, 2.1,-135]],
+    #       ['p', [5.8, -10, 2.1,-90]], ['p', [5.8, -12, 2.1,-90]], ['p', [5.8, -12.95, 2.1,-120]], 
+    #       ['p', [5.65, -13.1, 2.1,-135]], ['a', [0, 3, -135], 1], ['p', [3.95, -14, 2.1,-150]], 
+    #       ['p', [3, -14.8, 2.1,-180]], ['p', [1, -14.8, 2.1,-180]], ['p', [-0.95, -14.8, 2.1,-225]],
+    #       ['p', [-0.95, -8.05, 2.1,-270]], ['a', [-0.95, -6.05, 2.1,-270], 1], ['p', [0, 0, 2.1,0]], ['p', [0, 0, 0, 0]]]
+    self.detect_rng = 0.2
     self.current_wp = 0
     self.br = CvBridge()
-    self.stage = 0
+    self.rates_count = 0
+    self.rates = 3
+    self.post_process = False
 
   def init(self):
     r = rospy.Rate(4)
@@ -92,7 +96,7 @@ class DroneControl:
       r.sleep()
 
   def process(self):
-    r = rospy.Rate(3)
+    r = rospy.Rate(self.rates)
     while not rospy.is_shutdown() and self.initialized and not self.completed:
       if not self.d.isArmed():
         self.initialized = False
@@ -114,35 +118,47 @@ class DroneControl:
                                 self.wp[self.current_wp][1][2], 
                                 self.wp[self.current_wp][1][3])
       elif self.wp[self.current_wp][0] == 'v':
-        if self.wp[self.current_wp][2] is None:
-          rospy.loginfo("No Velocity Waypoint")
-        self.d.setVelocity(self.wp[self.current_wp][2][0],
-                           self.wp[self.current_wp][2][1])
-      if self.wp[self.current_wp][0] == 'a':
-        if self.stage / 4 == 0:
-          self.d.setLocalPosition(self.wp[self.current_wp][1][0], 
-                                  self.wp[self.current_wp][1][1], 
-                                  self.wp[self.current_wp][1][2], 
-                                  self.wp[self.current_wp][1][3])
-        elif self.stage / 4 == 1:
-          self.d.setAttitude(self.wp[self.current_wp][2], 0, self.wp[self.current_wp][1][3])
-        self.stage += 1
-        if self.stage / 4 >= 2:
-          self.stage = 0
+        if self.post_process is False:
+          self.d.setVelocity(self.wp[self.current_wp][2][0],
+                             self.wp[self.current_wp][2][1])
+        else:
+          self.d.setVelocity(-self.wp[self.current_wp][2][0],
+                             -self.wp[self.current_wp][2][1])
+      elif self.wp[self.current_wp][0] == 'a':
+        if self.post_process is False:
+          self.d.setAttitude(self.wp[self.current_wp][1][0], self.wp[self.current_wp][1][1], self.wp[self.current_wp][1][2])
+        else:
+          self.d.setAttitude(-self.wp[self.current_wp][1][0], -self.wp[self.current_wp][1][1], self.wp[self.current_wp][1][2])
 
       r.sleep()
   
   def update_wp_reach(self):
+    if self.wp[self.current_wp][0] == 'a' or self.wp[self.current_wp][0] == 'v':
+      if self.post_process is True:
+        if self.rates_count / self.rates >= 1:
+          self.rates_count = 0
+          self.current_wp += 1
+          if len(self.wp) == self.current_wp:
+            self.completed = True
+            rospy.loginfo("Mission Complete")
+            return
+          rospy.loginfo("Waypoint Setted")
+        else:
+          self.rates_count += 1
+        return
+      if self.rates_count / self.rates >= self.wp[self.current_wp][2]:
+        self.rates_count = 0
+        self.post_process = True
+        rospy.loginfo("Objective Reached %s %.2f %.2f" % (self.wp[self.current_wp][0], self.wp[self.current_wp][1][0], self.wp[self.current_wp][1][1]))
+      else:
+        self.rates_count += 1
+      return
+    
     lp = self.d.getLocalPosition()
     
     dist = sqrt((self.wp[self.current_wp][1][0] - lp.x)**2 + (self.wp[self.current_wp][1][1] - lp.y)**2)
 
-    rng = 0.3
-    if self.wp[self.current_wp][0] == 'p':
-      rng = 0.3
-    elif self.wp[self.current_wp][0] == 'v':
-      rng = 0.5
-    if dist < rng:
+    if dist < self.detect_rng:
       rospy.loginfo("WayPoint Reached %.2f %.2f" % (self.wp[self.current_wp][1][0], self.wp[self.current_wp][1][1]))
       self.current_wp += 1
       if len(self.wp) == self.current_wp:
@@ -236,6 +252,9 @@ class DroneControl:
     while not rospy.is_shutdown() and self.d.getMode() != "AUTO.LAND":
       pass
     rospy.loginfo("Mode [AUTO.LAND] Setted")
+    while not rospy.is_shutdown() and not self.d.isGrounded():
+      pass
+    rospy.loginfo("Finished")
 
 
 if __name__ == '__main__':
