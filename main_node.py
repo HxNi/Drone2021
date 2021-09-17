@@ -16,7 +16,7 @@ class DroneControl:
     self.completed = False
     self.tp = [0, 0, 2.1, 0]
     #self.wp = [['a', [5, 0, 0], 1]]
-    self.wp = [['v', [1, 0, 0], 1], ['p', [7, 0, 2.1,0]], ['p', [9, 1.25, 2.1,0]],
+    self.wp = [['v', [1, 0, 0], 3], ['p', [7, 0, 2.1,0]], ['p', [9, 1.25, 2.1,0]],
              ['p', [11, 2.5, 2.1,0]], ['p', [13, 2.5, 2.1,0]], ['p', [15, 1.25, 2.1,0]],
             ['p', [17, 0, 2.1,0]], ['p', [19, 0, 2.1,0]], ['p', [21, 1.25, 2.1,0]],
             ['p', [23, 2.5, 2.1,0],[1, 0.625]], ['p', [25, 2.5, 2.1,0]], ['p', [29, 2.5, 2.1,-90]], 
@@ -29,7 +29,7 @@ class DroneControl:
           ['p', [5.8, -10, 2.1,-90]], ['p', [5.8, -12, 2.1,-90]], ['p', [5.8, -12.95, 2.1,-120]], 
           ['p', [5.65, -13.1, 2.1,-135]], ['a', [0, 3, -135], 1], ['p', [3.95, -14, 2.1,-150]], 
           ['p', [3, -14.8, 2.1,-180]], ['p', [1, -14.8, 2.1,-180]], ['p', [-0.95, -14.8, 2.1,-225]],
-          ['p', [-0.95, -8.05, 2.1,-270]], ['a', [-0.95, -6.05, 2.1,-270], 1], ['p', [0, 0, 2.1,0]], ['p', [0, 0, 0, 0]]]
+          ['p', [-0.95, -8.05, 2.1,-270]], ['p', [-0.95, -6.05, 2.1,-270]], ['p', [0, 0, 2.1,0]], ['p', [0, 0, 0, 0]]]
     self.detect_rng = 0.2
     self.current_wp = 0
     self.br = CvBridge()
@@ -37,6 +37,7 @@ class DroneControl:
     self.rates = 3
     self.post_process = False
     self.post_process_t = 0.5
+    self.stuck = False
 
   def init(self):
     r = rospy.Rate(4)
@@ -119,7 +120,9 @@ class DroneControl:
         break
 
       # Output
-      if self.wp[self.current_wp][0] == 'p':
+      if self.stuck is True:
+        self.d.setAttitude(0, -4, self.wp[self.current_wp][1][2])
+      elif self.wp[self.current_wp][0] == 'p':
         self.d.setLocalPosition(self.wp[self.current_wp][1][0], 
                                 self.wp[self.current_wp][1][1], 
                                 self.wp[self.current_wp][1][2], 
@@ -161,10 +164,20 @@ class DroneControl:
       return
     
     lp = self.d.getLocalPosition()
+    lo = self.d.getLocalOrientation()
     
     dist = sqrt((self.wp[self.current_wp][1][0] - lp.x)**2 + (self.wp[self.current_wp][1][1] - lp.y)**2)
-
-    if dist < self.detect_rng:
+    orien = abs(self.wp[self.current_wp][1][3] % 360 - lo[2] % 360)
+    
+    if self.stuck is True:
+      if self.rates_count / self.rates >= self.post_process_t:
+        self.stuck = False
+      else:
+        self.rates_count += 1
+    elif False:
+      self.rates_count = 0
+      self.stuck = True 
+    elif dist < self.detect_rng and orien < 5:
       rospy.loginfo("WayPoint Reached %.2f %.2f" % (self.wp[self.current_wp][1][0], self.wp[self.current_wp][1][1]))
       self.current_wp += 1
       if len(self.wp) == self.current_wp:
@@ -174,8 +187,12 @@ class DroneControl:
   def log_position(self, wp):
     lp = self.d.getLocalPosition()
     lo = self.d.getLocalOrientation()
+    h = self.d.getAltitude()
+    s = ''
+    if self.stuck is True:
+      s = 'Stuck'
     dist = sqrt((wp[0] - lp.x)**2 + (wp[1] - lp.y)**2 + (wp[2] - lp.z)**2)
-    s = "%+.2f %+.2f %+.2f D %.2f (%+.2f %+.2f %+.2f)" % (lp.x, lp.y, lp.z, dist, lo[0], lo[1], lo[2])
+    s = "%+.2f %+.2f %+.2f D %.2f (%+.2f %+.2f %+.2f) H %.2f %s" % (lp.x, lp.y, lp.z, dist, lo[0], lo[1], lo[2], h, s)
     rospy.loginfo(s)
   
   def image_show(self):
