@@ -1,6 +1,6 @@
 import rospy
-from math import radians
-from tf.transformations import quaternion_from_euler
+from math import radians, degrees
+from tf.transformations import quaternion_from_euler, euler_from_quaternion
 from geometry_msgs.msg import PoseStamped, Twist, TwistStamped
 from mavros_msgs.msg import State, ExtendedState, HomePosition, AttitudeTarget, Altitude
 from sensor_msgs.msg import Image
@@ -168,9 +168,15 @@ class DroneFlight(Drone):
 
   def isHomeSet(self):
     return self.home_set
-  
+
   def getLocalPosition(self):
     return self.local_position_sv.pose.position
+  
+  def getLocalOrientation(self):
+    o = self.local_position_sv.pose.orientation
+    o = euler_from_quaternion([o.x, o.y, o.z, o.w])
+    o = [degrees(o[0]), degrees(o[1]), degrees(o[2])]
+    return o
   
   def getLocalVelocity(self):
     return self.local_velocity_sv.twist.linear.z
